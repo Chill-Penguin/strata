@@ -1,0 +1,22 @@
+version: 1
+
+paths:
+  # Where user-level templates live
+  user_root: ~/.strata
+
+  # Subdirectories under user_root
+  templates:
+    blocks: blocks
+    vars: vars
+    entries: entries
+
+  env:
+    defaults: 
+      - .env
+
+behavior:
+  # Whether setup auto-runs if missing
+  auto_setup: true
+
+  # Allow overwriting generated files
+  overwrite: false

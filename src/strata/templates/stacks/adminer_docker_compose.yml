@@ -1,0 +1,13 @@
+services:
+  # @include base_service_template
+  # @vars
+  #   service_name: adminer
+  #   image: adminer
+  #   traefik_port: 8080
+  #   homepage_group: Admin
+  #   homepage_name: Adminer
+  #   homepage_icon: adminer.png
+  #   homepage_description: Database client
+  #   timezone: America/Chicago
+
+  # @include base_traefik_network_template

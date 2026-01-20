@@ -1,0 +1,2 @@
+environment:
+  - TZ=America/Chicago

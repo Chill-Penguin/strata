@@ -1,0 +1,11 @@
+services:
+  # @include base_service_template
+  # @vars
+  #   service_name: homepage
+  #   image: ghcr.io/gethomepage/homepage
+  #   traefik_port: 3000
+  #   volumes:
+  #     - ./config:/app/config
+  #     - /var/run/docker.sock:/var/run/docker.sock
+
+  # @include base_traefik_network_template

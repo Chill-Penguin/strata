@@ -38,5 +38,5 @@ def build(template_path, profile):
 @click.argument("template_name")
 @click.argument("module_name")
 def init(template_name, module_name):
-    from strata.builder.scaffold import init_project
-    init_project(template_name, module_name)
+    from strata.builder.scaffold import run_scaffold
+    run_scaffold(template_name, module_name)

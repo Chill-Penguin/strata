@@ -5,7 +5,7 @@
 Strata is a CLI tool for defining, composing, and scaffolding project structures using reusable templates.
 It has two core responsibilities:
 
-1. **Build stacks** – Render infrastructure or configuration files from composable templates (via Jinja).
+1. **Build stacks** – Render infrastructure, configuration, or any other text file from composable templates (via Jinja).
 2. **Scaffold projects** – Generate new project folder structures (similar to `django-admin startapp`) from predefined blueprints.
 
 This README focuses on *using* Strata, not its internal architecture.
@@ -215,8 +215,3 @@ strata init node-api test-project
 
 Strata is meant to be predictable, inspectable, and boring—in the best way.
 
----
-
-## License
-
-MIT

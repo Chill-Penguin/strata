@@ -1,0 +1,12 @@
+version: 1
+
+variables:
+  name:
+    description: Application name
+    required: true
+
+rename:
+  "{{ name }}": "{{ name }}"
+
+post_create:
+  - git init

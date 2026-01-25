@@ -1,0 +1,36 @@
+version: 1
+
+env:
+  # Default env files (lowest priority)
+  defaults:
+    - base.env
+    - docker.env
+
+  # Environment-specific overlays
+  profiles:
+    dev:
+      - dev.env
+    qa:
+      - qa.env
+    prod:
+      - prod.env
+
+templates:
+
+  # Project-specific blocks (override globals)
+  blocks:
+    - blocks
+
+  # Project-specific variables
+  vars:
+    - vars
+
+output:
+  # Where rendered files go
+  directory: .
+
+  # Overwrite existing files?
+  overwrite: false
+
+defaults:
+  profile: dev

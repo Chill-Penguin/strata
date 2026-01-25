@@ -36,7 +36,7 @@ def build(template_path, profile):
 
 @cli.command()
 @click.argument("template_name")
-@click.argument("module_name")
+@click.option("--module_name", help="Name of the module to create")
 def init(template_name, module_name):
-    from strata.builder.scaffold import run_scaffold
-    run_scaffold(template_name, module_name)
+    from strata.builder.scaffold import init_scaffold
+    init_scaffold(template_name, module_name)

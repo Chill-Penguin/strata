@@ -1,194 +1,90 @@
-"""
-scaffold.py
-
-This module implements Strata's "scaffold" feature.
-
-Scaffolding is responsible for generating a new project or module
-from a predefined folder and file structure, similar to:
-- django-admin startproject
-- cookiecutter
-- rails new
-
-A scaffold:
-- Lives in ~/.strata/scaffolds/<scaffold-name>/
-- Contains a template directory
-- Optionally contains a scaffold.yml metadata file
-
-This module does NOT:
-- Build docker-compose files
-- Resolve environment variables
-- Expand infrastructure blocks
-
-It only creates files and folders.
-"""
-
 from pathlib import Path
 import shutil
-import yaml
-from jinja2 import Environment, FileSystemLoader
+import sys
+import click
 
-# Import STRATA_DIR so we know where user-level scaffolds live
-from strata.config import STRATA_DIR
+STRATA_TEMPLATES = Path.home() / ".strata" / "scaffolds"
 
 
-def scaffold_root() -> Path:
+def prompt_overwrite(path: Path, overwrite_all: bool) -> tuple[bool, bool]:
     """
-    Return the base directory where all user-defined scaffolds live.
+    Ask the user what to do if a file already exists.
 
-    Example:
-        ~/.strata/scaffolds/
+    Returns:
+        (should_write, overwrite_all)
     """
-    return STRATA_DIR / "scaffolds"
+    if overwrite_all:
+        return True, overwrite_all
+
+    click.echo(f"File exists: {path}")
+    choice = click.prompt(
+        "[o]verwrite / [s]kip / overwrite [a]ll / [q]uit",
+        default="s",
+        show_default=True,
+    ).lower()
+
+    if choice == "o":
+        return True, overwrite_all
+    if choice == "a":
+        return True, True
+    if choice == "s":
+        return False, overwrite_all
+    if choice == "q":
+        click.echo("Aborted.")
+        sys.exit(1)
+
+    click.echo("Invalid choice, skipping.")
+    return False, overwrite_all
 
 
-def load_scaffold(name: str) -> Path:
-    """
-    Locate a scaffold by name and return its path.
+def copy_scaffold(src: Path, dest: Path, inline: bool):
+    overwrite_all = False
 
-    If the scaffold does not exist, raise an error so the CLI
-    can fail fast and inform the user.
-    """
-    root = scaffold_root() / name
+    for item in src.rglob("*"):
+        relative = item.relative_to(src)
+        target = dest / relative
 
-    if not root.exists():
-        raise FileNotFoundError(
-            f"Scaffold '{name}' not found in {scaffold_root()}"
-        )
-
-    return root
-
-
-def render_template(src: Path, dest: Path, context: dict):
-    """
-    Render a single Jinja template file.
-
-    - src:  path to the .tpl file
-    - dest: destination path without the .tpl extension
-    - context: dictionary of variables (e.g. {"name": "myapp"})
-
-    This function:
-    1. Creates a Jinja environment rooted at the template's directory
-    2. Loads the template file
-    3. Renders it using the provided context
-    4. Writes the result to disk
-    """
-
-    # Create a Jinja environment that loads templates
-    # from the directory containing the source file
-    env = Environment(
-        loader=FileSystemLoader(src.parent),
-        keep_trailing_newline=True,  # Important for text files
-    )
-
-    # Load the template file by name
-    template = env.get_template(src.name)
-
-    # Render the template and write the result to disk
-    dest.write_text(template.render(context))
-
-
-def copy_tree(template_root: Path, target_root: Path, context: dict):
-    """
-    Copy an entire scaffold template tree to a new target directory.
-
-    This function:
-    - Recursively walks the scaffold's template directory
-    - Replaces {{ name }} in folder and file names
-    - Renders .tpl files using Jinja
-    - Copies non-template files as-is
-
-    Example:
-        template/{{ name }}/main.py.tpl
-        ->
-        myapp/myapp/main.py
-    """
-
-    # Walk every file and directory in the template tree
-    for path in template_root.rglob("*"):
-
-        # Determine this path relative to the template root
-        relative = path.relative_to(template_root)
-
-        # Replace {{ name }} in path components
-        # (directories and filenames)
-        rendered_parts = [
-            part.replace("{{ name }}", context["name"])
-            for part in relative.parts
-        ]
-
-        # Build the final destination path
-        dest_path = target_root.joinpath(*rendered_parts)
-
-        # If this is a directory, just create it
-        if path.is_dir():
-            dest_path.mkdir(parents=True, exist_ok=True)
+        if item.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
             continue
 
-        # Ensure the destination directory exists
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists() and inline:
+            should_write, overwrite_all = prompt_overwrite(target, overwrite_all)
+            if not should_write:
+                continue
 
-        # If the file is a Jinja template, render it
-        if path.suffix == ".tpl":
-            render_template(
-                src=path,
-                dest=dest_path.with_suffix(""),
-                context=context,
-            )
-        else:
-            # Otherwise, copy the file exactly as-is
-            shutil.copy2(path, dest_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(item, target)
 
 
-def run_scaffold(scaffold_name: str, target_name: str):
+def init_scaffold(
+    scaffold_name: str,
+    app_name: str | None = None,
+    *,
+    templates_dir: Path = STRATA_TEMPLATES,
+):
     """
-    Execute a scaffold.
+    Core scaffold initializer.
 
-    Parameters:
-    - scaffold_name: name of the scaffold (e.g. "python-cli")
-    - target_name:   name of the new project/module (e.g. "myapp")
-    - cwd:           current working directory (where output goes)
-
-    This is the main entry point used by the CLI.
+    CLI owns argument parsing.
+    This function owns filesystem behavior.
     """
+    scaffold_path = templates_dir / scaffold_name
 
-    # Locate the scaffold on disk
-    scaffold = load_scaffold(scaffold_name)
-    cwd = Path.cwd()
+    if not scaffold_path.exists():
+        raise FileNotFoundError(f"Scaffold not found: {scaffold_path}")
 
-    # Load scaffold metadata if present
-    # (Currently optional, but future-proofed)
-    meta_file = scaffold / "scaffold.yml"
-    meta = {}
+    if app_name:
+        # Project mode
+        dest = Path.cwd() / app_name
+        if dest.exists():
+            raise FileExistsError(f"Directory already exists: {dest}")
 
-    if meta_file.exists():
-        meta = yaml.safe_load(meta_file.read_text())
+        dest.mkdir()
+        copy_scaffold(scaffold_path, dest, inline=False)
+        return dest
 
-    # The directory containing the files to copy
-    template_root = scaffold / "template"
-
-    if not template_root.exists():
-        raise RuntimeError(
-            f"Scaffold '{scaffold_name}' is missing a template/ directory"
-        )
-
-    # The directory that will be created
-    target_root = cwd / target_name
-
-    # Prevent accidental overwrites
-    if target_root.exists():
-        raise FileExistsError(
-            f"Target '{target_name}' already exists"
-        )
-
-    # Variables available to Jinja templates
-    context = {
-        "name": target_name,
-    }
-
-    # Copy and render the scaffold
-    copy_tree(template_root, target_root, context)
-
-    # Success message for the user
-    print(
-        f"✔ Created '{target_name}' using scaffold '{scaffold_name}'"
-    )
+    # Inline / integration mode
+    dest = Path.cwd()
+    copy_scaffold(scaffold_path, dest, inline=True)
+    return dest

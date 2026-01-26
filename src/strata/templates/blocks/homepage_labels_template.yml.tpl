@@ -1,5 +1,5 @@
 - homepage.group={{ homepage_group }}
 - homepage.name={{ service_name }}
 - homepage.icon={{ homepage_icon }}
-- homepage.href=https://{{ service_name }}.{{ external_domain }}
+- homepage.href=https://{{ service_name }}{{ profile }}.{{ external_domain }}
 - homepage.description={{ homepage_description }}

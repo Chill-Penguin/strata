@@ -1,7 +1,7 @@
-- traefik.http.routers.{{ service_name }}.rule=(Host(`{{ service_name }}.{{ internal_domain }}`) || Host(`{{ service_name }}.{{ vpn_domain }}`) || Host(`{{ service_name }}.{{ external_domain }}`))
-- traefik.http.routers.{{ service_name }}.entrypoints=websecure
-- traefik.http.routers.{{ service_name }}.tls=true
-- traefik.http.services.{{ service_name }}.loadbalancer.server.port={{ traefik_port}}
-- traefik.http.routers.{{ service_name }}.service={{ service_name }}
+- traefik.http.routers.{{ service_name }}{{ profile }}.rule=(Host(`{{ service_name }}{{ profile }}.{{ internal_domain }}`) || Host(`{{ service_name }}{{ profile }}.{{ vpn_domain }}`) || Host(`{{ service_name }}{{ profile }}.{{ external_domain }}`))
+- traefik.http.routers.{{ service_name }}{{ profile }}.entrypoints=websecure
+- traefik.http.routers.{{ service_name }}{{ profile }}.tls=true
+- traefik.http.services.{{ service_name }}{{ profile }}.loadbalancer.server.port={{ traefik_port}}
+- traefik.http.routers.{{ service_name }}{{ profile }}.service={{ service_name }}
 - traefik.docker.network=traefik-web
 - traefik.enable=true

@@ -54,8 +54,8 @@ def build_stack(stack_name: str, profile=None):
     profile_env_files = project_config.profiles.get(selected_profile, [])
 
     env_vars = resolve_env_order(base_config.default_env_files, project_env_files=project_env_files, profile_env_files=profile_env_files)
-    #for k, v in env_vars.items():
-    #    print(f"ENV: {k}={v}")
+    for k, v in env_vars.items():
+        print(f"ENV: {k}={v}")
 
     template_dirs = template_roots(project_root)
 

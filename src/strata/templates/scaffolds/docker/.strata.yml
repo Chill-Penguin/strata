@@ -4,7 +4,6 @@ env:
   # Default env files (lowest priority)
   defaults:
     - base.env
-    - docker.env
 
   # Environment-specific overlays
   profiles:

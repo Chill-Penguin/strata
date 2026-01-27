@@ -8,8 +8,6 @@ It has two core responsibilities:
 1. **Build stacks** – Render infrastructure, configuration, or any other text file from composable templates (via Jinja).
 2. **Scaffold projects** – Generate new project folder structures (similar to `django-admin startapp`) from predefined blueprints.
 
-This README focuses on *using* Strata, not its internal architecture.
-
 ---
 
 ## Installation & Setup
@@ -20,7 +18,7 @@ This README focuses on *using* Strata, not its internal architecture.
 
 ### Install (development)
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Chill-Penguin/strata.git
 cd strata
 pip install -e .
 ```
@@ -30,83 +28,98 @@ pip install -e .
 strata --help
 ```
 
-You should see available commands such as `build`, `init`, and `debug`.
+You should see available commands such as `build`, `init`, and `setup`.
 
----
 
-## First-Time Run Test
-
-Run the debug preprocessor against an example stack file:
-
-```bash
-strata debug preprocess stacks/example.yml
+### Create home directory
+This will create the .strata folder in your home directory which will be covered in more detail later.
+```
+strata setup
 ```
 
-This will:
-- Expand `@include` directives
-- Convert inline `@vars` blocks into valid Jinja
-- Output the rendered Jinja template for inspection
-
-If this works without errors, your environment is set up correctly.
-
 ---
 
-## Using Strata to Build Stacks
+
+## Building Stacks
 
 ### Stack Files
 
-Stack files live under:
+Stack files are the starting template for any file that needs to be built. Stacks could be docker-compose files, HTML files, or any text file where it makes sense to divide and conquer. Example stack files can be found in:
 
 ```
-stacks/
-  my-stack.yml
+~/.strata/
+    stacks/
 ```
 
-A stack file may include reusable blocks:
+Stack file exist in your project directory and support standard text, Jinja template code, and custom Strata directives.
 
-```yaml
-# @include docker/service
-# @vars
-#   service_name: api
-#   port: 8000
+### Strata directives
+Strata currently supports a comment style directive system meant to be human readable while remaining valid syntax. These directives are then pre-compiled into jinja syntax before building the file. All directives must have a hash style comment followed by a space before.
+
+#### @include
+The include directive is used to insert reusable blocks into the file. It supports inline variabled which will be used for that specific block. This allows multiple of the same block in a file with different variables.
+
 ```
+  # @include base_service_template
+  # @vars
+  #   service_name: homepage
+  #   image: ghcr.io/gethomepage/homepage
+  #   traefik_port: 3000
+  #   volumes:
+  #     - ./config:/app/config
+  #     - /var/run/docker.sock:/var/run/docker.sock
+
+  # @include base_service_template
+  # @vars
+  #   service_name: adminer
+  #   image: adminer
+  #   traefik_port: 8080
+  #   homepage_group: Admin
+  #   homepage_name: Adminer
+  #   homepage_icon: adminer.png
+  #   homepage_description: Database client
+  #   timezone: America/Chicago
+
+  # @include base_traefik_network_template
+```
+
 
 ### Blocks
 
-Reusable blocks live under:
+Blocks are reusable components which can be included in stacks. Blocks may include other blocks as needed through the @include directive.
+Examples of blocks live under:
 
 ```
-blocks/
-  docker/
-    service.yml.tpl
+~/.strata/
+    blocks/
 ```
 
-Blocks are standard Jinja templates and receive variables from:
+Blocks function as standard Jinja templates and receive variables from:
 - Inline `@vars`
 - Global variables loaded at runtime
+
+
+### Building a stack
+Stacks can be built (rendered) with the command
+```
+strata build <filename>
+```
 
 ---
 
 ## Environment Files
 
-Environment variables are stored as YAML:
+Strata supports a layered environment file structure. Environment files can live:
+- under the ~/.strata/vars directory
+- in the project strata/vars directory
+- as inline variables defined in the @include directive
 
-```
-env/
-  dev.yml
-  prod.yml
-```
+On script startup, environment files are prioritized according to their distance from the target file. Meaning the resolution order top to bottom is:
+1. Inline vars
+2. Project vars
+3. Global vars
 
-Example:
-```yaml
-project_name: myapp
-domain: example.com
-```
-
-These variables are:
-- Loaded at script startup
-- Available globally to all templates
-- Overridable by inline `@vars`
+This allows the user to define variables that apply to multiple projects and can change those values in one location to apply to all projects as needed.
 
 ---
 
@@ -115,7 +128,7 @@ These variables are:
 ### Purpose of Scaffold
 
 Scaffolding is the *inverse* of stack building.
-Instead of rendering config from templates, it creates new project structures from predefined blueprints.
+Instead of rendering files from templates, it creates new project structures from predefined blueprints.
 
 Think:
 ```bash
@@ -126,22 +139,8 @@ But configurable and language-agnostic.
 
 ---
 
-### Blueprint Layout
+### Scaffold Layout
 
-Blueprints live under:
-
-```
-scaffolds/
-  python-cli/
-    __name__/
-      __init__.py
-      main.py
-    pyproject.toml
-```
-
-Notes:
-- `__name__` is replaced with the project name
-- Files may be plain text or Jinja templates
 
 ---
 
@@ -206,12 +205,4 @@ strata init node-api test-project
 
 ---
 
-## Philosophy
-
-- **Composable over monolithic**
-- **Explicit over magic**
-- **Readable templates over DSLs**
-- **Scaffolding and building are separate concerns**
-
-Strata is meant to be predictable, inspectable, and boring—in the best way.
 

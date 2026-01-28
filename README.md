@@ -127,8 +127,7 @@ This allows the user to define variables that apply to multiple projects and can
 
 ### Purpose of Scaffold
 
-Scaffolding is the *inverse* of stack building.
-Instead of rendering files from templates, it creates new project structures from predefined blueprints.
+Scaffolding is an additional layer on top of stacks. Scaffolds allow you to define template directories and files in order to bootstrap project folders.
 
 Think:
 ```bash
@@ -140,11 +139,28 @@ But configurable and language-agnostic.
 ---
 
 ### Scaffold Layout
+Scaffolds are defined inside of the .strata home directory.
 
+```
+~/.strata/
+    scaffolds/
+```
+
+Each scaffold should be placed inside of its own subdirectory with a descriptive name. For instance
+
+```
+~/.strata/
+    scaffolds/
+        python-cli/
+            main.py
+            commands/
+            etc/
+```
 
 ---
 
 ### Creating a New Project
+Scaffolds are created using the init command. The init command takes the name of the scaffold to be created and an optional project folder name. If specified, the project folder will be created first and then the scaffold will be copied over. If no project name is specified, the scaffold will be copied to the current working directory.
 
 ```bash
 strata init python-cli myapp
@@ -154,7 +170,7 @@ This will:
 1. Locate `scaffolds/python-cli`
 2. Copy its structure
 3. Replace `__name__` with `myapp`
-4. Render any Jinja templates
+4. Render any Jinja templates (soon!)
 5. Output a ready-to-use project folder
 
 Result:
@@ -167,42 +183,4 @@ myapp/
 ```
 
 ---
-
-## Adding New Stacks
-
-1. Create a new stack file:
-   ```
-   stacks/my-stack.yml
-   ```
-
-2. Reference reusable blocks:
-   ```yaml
-   # @include docker/service
-   ```
-
-3. Add or reuse block templates under:
-   ```
-   blocks/<category>/<name>.yml.tpl
-   ```
-
----
-
-## Adding New Scaffolds
-
-1. Create a new scaffold directory:
-   ```
-   scaffolds/node-api/
-   ```
-
-2. Define the desired folder structure
-3. Use `__name__` where the project name should appear
-4. Optionally use Jinja for dynamic files
-
-Test with:
-```bash
-strata init node-api test-project
-```
-
----
-
 
